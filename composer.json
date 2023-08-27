@@ -1,0 +1,30 @@
+{
+    "name": "wallacemaxters/testudo",
+    "description": "A package to generate tests for Laravel Eloquent models",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "WallaceMaxters\\Testudo\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "wallacemaxters",
+            "email": "wallacemaxters@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "illuminate/console": "^10.0",
+        "illuminate/database": "^10.20"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "WallaceMaxters\\Testudo\\TestudoServiceProvider"
+            ]
+        }
+    }
+
+}
