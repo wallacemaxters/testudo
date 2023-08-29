@@ -3,6 +3,7 @@
 namespace Tests\Unit\Models;
 
 use {{ classWithNamespace }};
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\{
     HasMany,
     HasOne,

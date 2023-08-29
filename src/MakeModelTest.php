@@ -182,16 +182,13 @@ class MakeModelTest extends Command
             PHP;
         }
 
-        foreach ($this->getScopes($model) as $scope => $sql) {
+        foreach ($this->getScopes($model) as $scope) {
 
             $keyValue['code'] .= <<<PHP
 
                 public function test_{$scope}_scope()
                 {
-                    return \$this->assertEquals(
-                        "{$sql}",
-                        \$this->model->{$scope}()->toSql()
-                    );
+                    return \$this->assertInstanceOf(Builder::class, {$classBaseName}::{$scope}());
                 }
 
             PHP;
@@ -314,15 +311,7 @@ class MakeModelTest extends Command
 
             $scope = strtolower($scope[0]) . substr($scope, 1);
 
-            $query = $model->newQuery();
-
-            $params = [
-                $reflectMethod->getParameters()[0]->getName() => $query
-            ];
-
-            $this->laravel->call([$model, $name], $params);
-
-            $scopes[$scope] = $query->toSql();
+            $scopes[] = $scope;
 
         }
 
