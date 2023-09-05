@@ -126,7 +126,6 @@ class MakeModelTest extends Command
 
         $this->fillModel($model);
 
-
         $keyValue = [
             'classWithNamespace' => $class,
             'class'              => $classBaseName,
@@ -146,7 +145,7 @@ class MakeModelTest extends Command
 
                 public function test_{$name}_relationship()
                 {
-                    return \$this->assertInstanceOf({$relationClass}::class, \$this->model->{$name}());
+                    \$this->assertInstanceOf({$relationClass}::class, \$this->model->{$name}());
                 }
 
             PHP;
