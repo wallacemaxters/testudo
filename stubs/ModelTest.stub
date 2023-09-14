@@ -31,7 +31,7 @@ class {{ class }}Test extends {{ extends }}
 
     public function test_get_table()
     {
-        return $this->assertEquals('{{ tableName }}', $this->model->getTable());
+        $this->assertEquals('{{ tableName }}', $this->model->getTable());
     }
 
     {{ code }}
