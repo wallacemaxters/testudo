@@ -1,6 +1,6 @@
 # Testudo
 
-The Testudo (joke with "big forehead" in portuguese) is a generator for common TestCases in Laravel.
+The Testudo (joke with "big forehead" in portuguese) is a code generator for common TestCases in Laravel.
 
 ## Install
 
