@@ -2,17 +2,19 @@
 
 namespace WallaceMaxters\Testudo;
 
+use function str;
+use ReflectionClass;
+use function sprintf;
+use ReflectionMethod;
 use Illuminate\Support\Arr;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use ReflectionClass;
-use ReflectionMethod;
-use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\VarExporter\VarExporter;
 
-use function sprintf;
-use function str;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use ReflectionNamedType;
 
 #[AsCommand(name: 'testudo:make-model-test')]
 class MakeModelTest extends Command
@@ -134,16 +136,18 @@ class MakeModelTest extends Command
             'namespace'          => $namespace,
             'extends'            => '\Tests\TestCase',
             'code'               => null,
-            'fill'               => var_export($model->getAttributes(), true)
+            'fill'               => VarExporter::export($model->getAttributes()),
+            'fillable'           => VarExporter::export($model->getFillable())
         ];
 
         foreach ($this->getRelations($model) as $name => $relationType) {
 
             $relationClass = class_basename($relationType);
+            $snakeName = str($name)->snake()->toString();
 
             $keyValue['code'] .= <<<PHP
 
-                public function test_{$name}_relationship()
+                public function test_{$snakeName}_relationship()
                 {
                     \$this->assertInstanceOf({$relationClass}::class, \$this->model->{$name}());
                 }
@@ -155,15 +159,17 @@ class MakeModelTest extends Command
 
         foreach ($attributes as $name => $value) {
 
+            $snakeName = str($name)->snake()->toString();
+
             if (is_bool($value)) {
 
                 $assertName = $value ? 'assertTrue' : 'assertFalse';
 
                 $keyValue['code'] .= <<<PHP
 
-                public function test_{$name}_attribute()
+                public function test_{$snakeName}_attribute()
                 {
-                    return \$this->{$assertName}(\$this->model->{$name});
+                    \$this->{$assertName}(\$this->model->{$name});
                 }
 
             PHP;
@@ -173,21 +179,25 @@ class MakeModelTest extends Command
 
             $keyValue['code'] .= <<<PHP
 
-                public function test_{$name}_attribute()
+                public function test_{$snakeName}_attribute()
                 {
-                    return \$this->assertEquals('{$value}', \$this->model->{$name});
+                    \$this->assertEquals('{$value}', \$this->model->{$name});
                 }
 
             PHP;
         }
 
-        foreach ($this->getScopes($model) as $scope) {
+        foreach ($this->getScopes($model) as $item) {
+
+            $snakeName = str($item['scope'])->snake()->toString();
+
+
 
             $keyValue['code'] .= <<<PHP
 
-                public function test_{$scope}_scope()
+                public function test_{$snakeName}_scope()
                 {
-                    return \$this->assertInstanceOf(Builder::class, {$classBaseName}::{$scope}());
+                    \$this->assertInstanceOf(Builder::class, {$classBaseName}::{$item['scope']}());
                 }
 
             PHP;
@@ -244,7 +254,9 @@ class MakeModelTest extends Command
             return false;
         }
 
-        return $reflect->getNumberOfParameters() === 0 && $reflect->class === get_class($model);
+        return $reflect->getNumberOfParameters() === 0
+            && $reflect->class === get_class($model)
+            && $model->{$name}() instanceof Relation;
     }
 
     /**
@@ -259,7 +271,7 @@ class MakeModelTest extends Command
 
         $relationships = [];
 
-        $factory = method_exists($model, 'factory');
+        $factory = $this->reallyHasFactory($model);
 
         foreach ($reflect->getMethods() as $reflectMethod) {
 
@@ -290,6 +302,11 @@ class MakeModelTest extends Command
         return $relationships;
     }
 
+    /**
+     * Gets the info of scopes from a model
+     *
+     * @return array<int, array>
+     * */
     protected function getScopes(Model $model): array
     {
         $reflect = new ReflectionClass($model);
@@ -308,21 +325,33 @@ class MakeModelTest extends Command
 
             $scope = str($name)->substr(5)->toString();
 
+            if (empty($scope)) continue;
+
             $scope = strtolower($scope[0]) . substr($scope, 1);
 
-            $scopes[] = $scope;
+            $params = array_map(
+                fn (\ReflectionParameter $param) => $param->getName(),
+                $reflectMethod->getParameters()
+            );
+
+            $scopes[] = [
+                'scope'        => $scope,
+                'params_count' => $reflectMethod->getNumberOfParameters(),
+                'params'       => $params,
+            ];
 
         }
 
         return $scopes;
     }
 
+    /**
+     * Check if model really has factory
+     *
+     * @return bool
+     * */
     protected function reallyHasFactory(Model $model): bool
     {
-        $factory = $this->reallyHasFactory($model);
-
-        if ($factory === false) return false;
-
         try {
             $model::factory();
             return true;
@@ -335,7 +364,7 @@ class MakeModelTest extends Command
     {
         try {
             $model = $model::factory()->make();
-        } catch (\Throwable ) {
+        } catch (\Throwable) {
             return;
         }
 

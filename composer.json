@@ -17,7 +17,8 @@
     "minimum-stability": "stable",
     "require": {
         "illuminate/console": "^10.0",
-        "illuminate/database": "^10.0"
+        "illuminate/database": "^10.0",
+        "symfony/var-exporter": "^6.3"
     },
     "extra": {
         "laravel": {
@@ -26,5 +27,4 @@
             ]
         }
     }
-
 }
